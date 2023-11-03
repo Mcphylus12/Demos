@@ -1,0 +1,71 @@
+version: '3.4'
+
+services:
+  demo-entry:
+    build:
+      context: .
+      dockerfile: Demo/DemoEntry/Dockerfile
+    ports:
+      - "8090:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+    depends_on:
+      - rabbitmq
+    profiles: ["demo"]
+  demo-worker:
+    build:
+      context: .
+      dockerfile: Demo/DemoWorker/Dockerfile
+    ports:
+      - "8091:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+    depends_on:
+      - rabbitmq
+    profiles: ["demo"]
+  be-customerstore:
+    build:
+      context: .
+      dockerfile: BE-CustomerStore/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__Db=Server=db;Database=customerstore;User=sa;Password=Pass@Word1!;
+    ports:
+      - "8081:80"
+    depends_on:
+      - db
+    profiles: ["backend"]
+  fe-customerstore:
+    build:
+      context: .
+      dockerfile: FE-CustomerStore/Dockerfile
+    ports:
+      - "8080:80"
+    profiles: ["frontend"]
+  db:
+    user: root
+    image: "mcr.microsoft.com/mssql/server"
+    environment:
+        SA_PASSWORD: "Pass@Word1!"
+        ACCEPT_EULA: "Y"
+    volumes:
+      - sqlvolume:/var/opt/mssql
+    ports:
+      - "1433:1433"
+    profiles: ["backend"]
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+        - 5672:5672
+        - 15672:15672
+    volumes:
+        - rabbitdata:/var/lib/rabbitmq/
+        - rabbitlog:/var/log/rabbitmq
+    profiles: ["demo"]
+volumes:
+  rabbitdata:
+  rabbitlog:
+  sqlvolume:
